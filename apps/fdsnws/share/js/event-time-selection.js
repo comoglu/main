@@ -90,7 +90,7 @@ const debouncedEventLookup = debounce(async function(eventId) {
 
   try {
     currentOriginTime = await fetchEventOriginTime(eventId);
-    statusDiv.textContent = `Origin: ${currentOriginTime.toISOString().replace(/\.\d{3}Z$/, '')}`;
+    statusDiv.textContent = `Origin Time: ${currentOriginTime.toISOString().replace(/\.\d{3}Z$/, '')}`;
     statusDiv.className = 'status success';
     updateTimeFields();
   } catch (error) {
