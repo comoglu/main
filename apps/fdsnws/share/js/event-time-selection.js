@@ -11,20 +11,13 @@ function debounce(fn, delay) {
   };
 }
 
-// Event service availability
-let eventServiceAvailable = null; // null = unknown, true/false = known
-
 async function checkEventService() {
-  if (eventServiceAvailable !== null) return eventServiceAvailable;
-  
   try {
     const response = await fetch('../../event/1/version');
-    eventServiceAvailable = response.ok;
+    return response.ok;
   } catch (error) {
-    eventServiceAvailable = false;
+    return false;
   }
-  
-  return eventServiceAvailable;
 }
 
 // Event functionality
@@ -130,18 +123,8 @@ async function initializeEventTimeSelection() {
   if (serviceAvailable) {
     eventLegend.textContent = 'Event-based Time Selection ✓';
     eventLegend.style.color = '#28a745';
-  } else {
-    eventLegend.textContent = 'Event-based Time Selection (Event service unavailable)';
-    eventLegend.style.color = '#dc3545';
-    eventSection.disabled = true;
     
-    // Disable all inputs in the section
-    const inputs = eventSection.querySelectorAll('input, button');
-    inputs.forEach(input => input.disabled = true);
-  }
-  
-  // Only set up event listeners if service is available
-  if (serviceAvailable) {
+    // Set up event listeners
     document.getElementById('event-id').addEventListener('input', (e) => {
       debouncedEventLookup(e.target.value);
     });
@@ -149,12 +132,9 @@ async function initializeEventTimeSelection() {
     document.getElementById('before-time').addEventListener('input', updateTimeFields);
     document.getElementById('after-time').addEventListener('input', updateTimeFields);
     document.getElementById('clear-event').addEventListener('click', clearEventData);
+  } else {
+    eventLegend.textContent = 'Event-based Time Selection (service unavailable)';
+    eventLegend.style.color = '#dc3545';
+    eventSection.disabled = true;
   }
-}
-
-// Initialize when DOM is loaded
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeEventTimeSelection);
-} else {
-  initializeEventTimeSelection();
 }

@@ -11,7 +11,11 @@
   <script type="text/javascript" src="../../js/event-time-selection.js"></script>
   <script type="text/javascript">
     A_TCALCONF['format'] = 'Y-m-dT00:00:00';
-    window.onload = fdsnwsInitQueryForm;
+    
+    window.onload = function() {
+      fdsnwsInitQueryForm();
+      initializeEventTimeSelection();
+    };
   </script>
   <style>
     .event-section {
@@ -83,8 +87,8 @@
     <div id="event-status"></div>
     
     <div class="time-controls">
-      <label>Before: <input type="number" id="before-time" min="0" step="1.0" placeholder="0"/> min</label>
-      <label>After: <input type="number" id="after-time" min="0" step="1.0" placeholder="0"/> min</label>
+      <label>Before: <input type="number" id="before-time" min="0" step="0.1" placeholder="5"/> min</label>
+      <label>After: <input type="number" id="after-time" min="0" step="0.1" placeholder="5"/> min</label>
     </div>
   </fieldset>
 
