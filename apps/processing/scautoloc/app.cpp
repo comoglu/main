@@ -435,6 +435,13 @@ bool App::initConfiguration() {
 	try { _config.xxlDeadTime = configGetDouble("autoloc.xxl.deadTime"); }
 	catch (...) {}
 
+	// Region-based depth constraints
+	try { _config.useRegionDepth = configGetBool("autoloc.regionDepth.enable"); }
+	catch (...) {}
+
+	try { _config.depthRegions = configGetStrings("autoloc.regionDepth.regions"); }
+	catch (...) {}
+
 	try { _config.minPickSNR = configGetDouble("autoloc.minPickSNR"); }
 	catch (...) {}
 

@@ -19,6 +19,10 @@
 #include <string>
 #include <map>
 #include <set>
+#include <vector>
+
+#include <seiscomp/geo/feature.h>
+#include <seiscomp/geo/featureset.h>
 
 #include "datamodel.h"
 #include "nucleator.h"
@@ -222,6 +226,12 @@ class Autoloc3 {
 			double xxlMaxStaDist{10.0};         // unit: degrees
 			double xxlMaxDepth{100};            // unit: km
 
+			// Region-based depth constraints
+			// If enabled, use region-specific default depths from BNA/GeoJSON
+			bool useRegionDepth{false};
+			// List of region names to use for depth constraints
+			std::vector<std::string> depthRegions;
+
 			const Seiscomp::Config::Config* scconfig{nullptr};
 
 		public:
@@ -408,6 +418,16 @@ class Autoloc3 {
 		// if successful, true is returned, otherwise false
 		bool _setDefaultDepth(Origin*);
 
+		// Get the effective default depth for an origin based on its location.
+		// Returns region-specific depth if origin is within a configured region,
+		// otherwise returns the global default depth.
+		double _getDefaultDepthForOrigin(const Origin*) const;
+
+		// Get region-specific max depth constraint for an origin.
+		// Returns the maxDepth from the region if origin is within a configured
+		// region that has maxDepth defined, otherwise returns the global maxDepth.
+		double _getMaxDepthForOrigin(const Origin*) const;
+
 		// Attempt to decide whether the focal depth can be resolved considering
 		// the station distribution. Returns true if resolvable, false if not.
 		bool _depthIsResolvable(Origin*);
@@ -514,6 +534,9 @@ class Autoloc3 {
 		OriginVector _origins;
 		Config   _config;
 		StationConfig _stationConfig;
+
+		// Cached region features for depth constraints
+		std::vector<const Seiscomp::Geo::GeoFeature*> _depthRegions;
 };
 
 

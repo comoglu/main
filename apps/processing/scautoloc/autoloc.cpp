@@ -15,8 +15,13 @@
 #define SEISCOMP_COMPONENT Autoloc
 #include <seiscomp/logging/log.h>
 #include <seiscomp/seismology/ttt.h>
+#include <seiscomp/geo/feature.h>
+#include <seiscomp/geo/featureset.h>
+#include <seiscomp/core/strings.h>
 #include <algorithm>
 #include <cmath>
+#include <string>
+#include <vector>
 
 #include "util.h"
 #include "scutil.h"
@@ -133,6 +138,36 @@ bool Autoloc3::init()
 
 	SEISCOMP_DEBUG("Setting configured locator profile: %s", _config.locatorProfile.c_str());
 	setLocatorProfile(_config.locatorProfile);
+
+	// Load region-based depth constraints if enabled
+	if (_config.useRegionDepth && !_config.depthRegions.empty()) {
+		const Seiscomp::Geo::GeoFeatureSet &featureSet =
+			Seiscomp::Geo::GeoFeatureSetSingleton::getInstance();
+		const std::vector<Seiscomp::Geo::GeoFeature*> &features = featureSet.features();
+
+		for (const std::string &regionName : _config.depthRegions) {
+			bool found = false;
+			for (const Seiscomp::Geo::GeoFeature *feature : features) {
+				if (feature->name() == regionName) {
+					if (!feature->closedPolygon()) {
+						SEISCOMP_WARNING("Region '%s' is not a closed polygon, ignoring",
+						                 regionName.c_str());
+						continue;
+					}
+					_depthRegions.push_back(feature);
+					found = true;
+					SEISCOMP_INFO("Loaded depth region '%s'", regionName.c_str());
+					break;
+				}
+			}
+			if (!found) {
+				SEISCOMP_WARNING("Depth region '%s' not found in GeoFeatureSet",
+				                 regionName.c_str());
+			}
+		}
+		SEISCOMP_INFO("Loaded %zu depth regions for region-based depth constraints",
+		              _depthRegions.size());
+	}
 
 	return true; // ready to start processing
 }
@@ -1541,13 +1576,16 @@ static size_t depthPhaseCount(Origin *origin)
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 bool Autoloc3::_setDefaultDepth(Origin *origin)
-// Set origin depth to the configured default depth and relocate.
+// Set origin depth to the configured default depth (or region-specific depth) and relocate.
 // May be set in an origin far outside the network where depth resolution is expected to be poor,
 // or in testing that depth resolution.
 {
 	OriginPtr test = new Origin(*origin);
 
-	_relocator.setFixedDepth(_config.defaultDepth);
+	// Use region-specific depth if available, otherwise global default
+	double defaultDepth = _getDefaultDepthForOrigin(origin);
+
+	_relocator.setFixedDepth(defaultDepth);
 	_relocator.useFixedDepth(true);
 	OriginPtr relo = _relocator.relocate(test.get());
 	if ( ! relo) {
@@ -1574,6 +1612,9 @@ bool Autoloc3::_setTheRightDepth(Origin *origin)
 	if (origin->depthType == Origin::DepthPhases)
 		return false;
 
+	// Use region-specific depth if available
+	double defaultDepth = _getDefaultDepthForOrigin(origin);
+
 	// dann aber auch mal testen, ob man mit freier Tiefe evtl. weiter kommt.
 	// Sonst bleibt das immer bei der Default-Tiefe haengen!
 	if (origin->depthType == Origin::DepthDefault) {
@@ -1587,7 +1628,7 @@ bool Autoloc3::_setTheRightDepth(Origin *origin)
 			return false;
 		}
 
-		double radius = 5*(relo->hypocenter.dep >= _config.defaultDepth ? relo->hypocenter.dep : _config.defaultDepth)/111.2;
+		double radius = 5*(relo->hypocenter.dep >= defaultDepth ? relo->hypocenter.dep : defaultDepth)/111.2;
 
 		// XXX This is a hack, but better than nothing:
 		// if there are at least 2 stations within 5 times the source depth, we assume sufficient depth resolution.
@@ -1771,7 +1812,9 @@ bool Autoloc3::_rework(Origin *origin) {
 	}
 
 	if ( enforceDefaultDepth ) {
-		_relocator.setFixedDepth(_config.defaultDepth);
+		// Use region-specific depth if available
+		double defaultDepth = _getDefaultDepthForOrigin(origin);
+		_relocator.setFixedDepth(defaultDepth);
 	}
 
 	bool keepDepth = adoptManualDepth || enforceDefaultDepth;
@@ -1820,7 +1863,9 @@ bool Autoloc3::_rework(Origin *origin) {
 	_excludeDistantStations(origin);
 	_excludePKP(origin);
 
-	if (origin->hypocenter.dep != _config.defaultDepth && origin->depthType == Origin::DepthDefault)
+	// Check if the depth differs from the effective default for this location
+	double effectiveDefaultDepth = _getDefaultDepthForOrigin(origin);
+	if (origin->hypocenter.dep != effectiveDefaultDepth && origin->depthType == Origin::DepthDefault)
 		origin->depthType = Origin::DepthFree;
 
 	// once more (see also above)
@@ -2050,9 +2095,11 @@ bool Autoloc3::_publishable(const Origin *origin) const
 	}
 
 
-	if (origin->hypocenter.dep > _config.maxDepth) {
+	// Use region-specific maxDepth if available
+	double maxDepth = _getMaxDepthForOrigin(origin);
+	if (origin->hypocenter.dep > maxDepth) {
 		SEISCOMP_INFO("Origin %ld too deep: %.1f km > %.1f km (maxDepth)",
-			      origin->id, origin->hypocenter.dep, _config.maxDepth);
+			      origin->id, origin->hypocenter.dep, maxDepth);
 		return false;
 	}
 
@@ -2101,7 +2148,7 @@ bool Autoloc3::_store(Origin *origin)
 		origin->preliminary = false;
 
 	if (origin->depthType == Origin::DepthDefault &&
-	    origin->hypocenter.dep != _config.defaultDepth)
+	    origin->hypocenter.dep != _getDefaultDepthForOrigin(origin))
 		origin->depthType = Origin::DepthFree;
 
 	if ( ! _newOrigins.find(origin))
@@ -2188,7 +2235,7 @@ bool Autoloc3::_associate(Origin *origin, const Pick *pick, const std::string &p
 			bool fixed = false;
 			if (_config.defaultDepthStickiness > 0.9) {
 				fixed = true;
-				_relocator.setFixedDepth(_config.defaultDepth);
+				_relocator.setFixedDepth(_getDefaultDepthForOrigin(origin));
 			}
 
 //			else if (origin->depthType == Origin::DepthManuallyFixed || origin->depthType == Origin::DepthPhases) {
@@ -3095,7 +3142,8 @@ bool Autoloc3::_depthIsResolvable(Origin *origin)
 //		return true;
 //	}
 
-	if (origin->depthType == Origin::DepthDefault && origin->hypocenter.dep != _config.defaultDepth)
+	double effectiveDefaultDepth = _getDefaultDepthForOrigin(origin);
+	if (origin->depthType == Origin::DepthDefault && origin->hypocenter.dep != effectiveDefaultDepth)
 		origin->depthType = Origin::DepthFree;
 
 	OriginPtr test = new Origin(*origin);
@@ -3114,7 +3162,7 @@ bool Autoloc3::_depthIsResolvable(Origin *origin)
 	}
 
 	test = new Origin(*origin);
-	test->hypocenter.dep = _config.defaultDepth;
+	test->hypocenter.dep = effectiveDefaultDepth;
 	_relocator.useFixedDepth(true);
 	relo = _relocator.relocate(test.get());
 	if ( ! relo) {
@@ -3138,6 +3186,72 @@ bool Autoloc3::_depthIsResolvable(Origin *origin)
 	_updateScore(origin); // why here?
 
 	return false;
+}
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+double Autoloc3::_getDefaultDepthForOrigin(const Origin *origin) const
+{
+	if (!_config.useRegionDepth || _depthRegions.empty()) {
+		return _config.defaultDepth;
+	}
+
+	Seiscomp::Geo::GeoCoordinate location(origin->hypocenter.lat, origin->hypocenter.lon);
+
+	for (const Seiscomp::Geo::GeoFeature *region : _depthRegions) {
+		if (region->contains(location)) {
+			// Look for defaultDepth attribute in the region
+			const Seiscomp::Geo::GeoFeature::Attributes &attrs = region->attributes();
+			auto it = attrs.find("defaultDepth");
+			if (it != attrs.end()) {
+				double depth;
+				if (Seiscomp::Core::fromString(depth, it->second)) {
+					SEISCOMP_DEBUG("Using region '%s' defaultDepth=%.1f km for origin at %.2f/%.2f",
+					               region->name().c_str(), depth,
+					               origin->hypocenter.lat, origin->hypocenter.lon);
+					return depth;
+				}
+			}
+		}
+	}
+
+	return _config.defaultDepth;
+}
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+double Autoloc3::_getMaxDepthForOrigin(const Origin *origin) const
+{
+	if (!_config.useRegionDepth || _depthRegions.empty()) {
+		return _config.maxDepth;
+	}
+
+	Seiscomp::Geo::GeoCoordinate location(origin->hypocenter.lat, origin->hypocenter.lon);
+
+	for (const Seiscomp::Geo::GeoFeature *region : _depthRegions) {
+		if (region->contains(location)) {
+			// Look for maxDepth attribute in the region
+			const Seiscomp::Geo::GeoFeature::Attributes &attrs = region->attributes();
+			auto it = attrs.find("maxDepth");
+			if (it != attrs.end()) {
+				double depth;
+				if (Seiscomp::Core::fromString(depth, it->second)) {
+					SEISCOMP_DEBUG("Using region '%s' maxDepth=%.1f km for origin at %.2f/%.2f",
+					               region->name().c_str(), depth,
+					               origin->hypocenter.lat, origin->hypocenter.lon);
+					return depth;
+				}
+			}
+		}
+	}
+
+	return _config.maxDepth;
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

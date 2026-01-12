@@ -239,6 +239,48 @@
 						</description>
 					</parameter>
 				</group>
+
+				<group name="regionDepth">
+					<description>
+					Region-based depth constraints allow using different default depths
+					and maximum depths depending on the geographic location of the origin.
+					This is simpler than a full slab model but more geologically realistic
+					than a single global default depth.
+
+					Regions are defined using BNA or GeoJSON polygon files stored in
+					@DATADIR@/spatial/vector/. The polygon attributes can specify:
+
+					- defaultDepth: The default depth to use when depth cannot be resolved
+					- maxDepth: Maximum allowed depth for origins in this region
+
+					Example BNA format:
+					"stable_craton","rank 1","defaultDepth: 10, maxDepth: 35",5
+					...polygon coordinates...
+
+					This feature reuses the same region infrastructure as the evrc plugin
+					for scevent.
+					</description>
+					<parameter name="enable" type="boolean" default="false">
+						<description>
+						Enable region-based depth constraints. When enabled, scautoloc
+						will check if the origin location falls within any of the
+						configured regions and use region-specific depth constraints.
+						</description>
+					</parameter>
+					<parameter name="regions" type="list:string" default="">
+						<description>
+						List of region names (polygon names from BNA/GeoJSON files) to use
+						for depth constraints. The regions are checked in order, and the
+						first matching region's depth constraints are applied.
+
+						Example regions for different tectonic settings:
+						- Stable cratons: defaultDepth=10, maxDepth=35
+						- Subduction zones: defaultDepth=35, maxDepth=700
+						- Volcanic areas: defaultDepth=5, maxDepth=20
+						- Mid-ocean ridges: defaultDepth=10, maxDepth=15
+						</description>
+					</parameter>
+				</group>
 			</group>
 		</configuration>
 		<command-line>

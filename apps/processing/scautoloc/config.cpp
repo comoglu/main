@@ -137,14 +137,26 @@ void Autoloc3::Config::dump() const {
 
 	if ( ! xxlEnabled) {
 		SEISCOMP_INFO("  XXL feature is not enabled");
-		return;
 	}
-	SEISCOMP_INFO("  XXL feature is enabled");
-	SEISCOMP_INFO("  xxl.minPhaseCount                 %d",     xxlMinPhaseCount);
-	SEISCOMP_INFO("  xxl.minAmplitude                  %g",     xxlMinAmplitude);
-	SEISCOMP_INFO("  xxl.maxStationDistance           %.1f deg", xxlMaxStaDist);
-	SEISCOMP_INFO("  xxl.maxDepth                      %g km",  xxlMaxDepth);
-	SEISCOMP_INFO("  xxl.deadTime                      %g s",  xxlDeadTime);
+	else {
+		SEISCOMP_INFO("  XXL feature is enabled");
+		SEISCOMP_INFO("  xxl.minPhaseCount                 %d",     xxlMinPhaseCount);
+		SEISCOMP_INFO("  xxl.minAmplitude                  %g",     xxlMinAmplitude);
+		SEISCOMP_INFO("  xxl.maxStationDistance           %.1f deg", xxlMaxStaDist);
+		SEISCOMP_INFO("  xxl.maxDepth                      %g km",  xxlMaxDepth);
+		SEISCOMP_INFO("  xxl.deadTime                      %g s",  xxlDeadTime);
+	}
+
+	if ( ! useRegionDepth) {
+		SEISCOMP_INFO("  Region-based depth feature is not enabled");
+	}
+	else {
+		SEISCOMP_INFO("  Region-based depth feature is enabled");
+		SEISCOMP_INFO("  regionDepth.regions:");
+		for (const auto &region : depthRegions) {
+			SEISCOMP_INFO("    - %s", region.c_str());
+		}
+	}
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
