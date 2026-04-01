@@ -121,22 +121,38 @@
 				</description>
 				<parameter name="lonmin" type="double" unit="deg" default="-180">
 					<description>
-						Minimum longitude of initially displayed map region.
+						Minimum longitude of the displayed map region. Applies at
+						startup and whenever the map is recentered on an event,
+						keeping the view anchored to the configured region.
+						If set, takes priority over display.defaultEventRadius.
 					</description>
 				</parameter>
 				<parameter name="lonmax" type="double" unit="deg" default="180">
 					<description>
-						Maximum longitude of initially displayed map region.
+						Maximum longitude of the displayed map region. See
+						display.lonmin for details.
 					</description>
 				</parameter>
 				<parameter name="latmin" type="double" unit="deg" default="-90">
 					<description>
-						Minimum latitude of initially displayed map region.
+						Minimum latitude of the displayed map region. See
+						display.lonmin for details.
 					</description>
 				</parameter>
 				<parameter name="latmax" type="double" unit="deg" default="90">
 					<description>
-						Maximum latitude of initially displayed map region.
+						Maximum latitude of the displayed map region. See
+						display.lonmin for details.
+					</description>
+				</parameter>
+				<parameter name="defaultEventRadius" type="double" unit="deg" default="-1">
+					<description>
+						Default map radius in degrees when recentering on a new
+						event. The map is centered on the event epicenter and
+						zoomed to this radius. A negative value (default) uses the
+						automatic radius based on the maximum arrival distance,
+						capped at 30 degrees. Ignored if display.lonmin/max/
+						latmin/max are set.
 					</description>
 				</parameter>
 				<group name="event">
