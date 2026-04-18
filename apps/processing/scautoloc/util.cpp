@@ -184,6 +184,41 @@ bool travelTimeP(double lat1, double lon1, double dep1, double lat2, double lon2
 
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+bool travelTimeS(double lat1, double lon1, double dep1, double lat2, double lon2, double alt2, double delta, TravelTime &result)
+{
+	static Seiscomp::TravelTimeTable ttt;
+
+	Seiscomp::TravelTimeList *ttlist { nullptr };
+
+	try {
+		ttlist = ttt.compute(lat1, lon1, std::max(dep1, 0.01), lat2, lon2, alt2);
+	}
+	catch ( std::out_of_range & ) {
+		return false;
+	}
+	if ( ! ttlist)
+		return false;
+
+	bool found = false;
+	for (auto& tt : *ttlist) {
+		if (tt.phase.empty())
+			continue;
+		if (tt.phase[0] != 'S')
+			continue;
+		result = tt;
+		found = true;
+		break;
+	}
+	delete ttlist;
+
+	return found;
+}
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 static Time str2time(const std::string &s)
 {
 	Seiscomp::Core::Time t;

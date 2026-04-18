@@ -1814,6 +1814,7 @@ bool Autoloc3::_rework(Origin *origin) {
 
 	_ensureAcceptableRMS(origin, keepDepth);
 	_addMorePicks(origin, keepDepth);
+	_addSPicks(origin);
 
 	_trimResiduals(origin); // again!
 	_removeOutliers(origin);
@@ -2138,6 +2139,10 @@ bool Autoloc3::_associate(Origin *origin, const Pick *pick, const std::string &p
 		if ( !travelTimeP(origin->hypocenter.lat, origin->hypocenter.lon, origin->hypocenter.dep, station->lat, station->lon, 0, delta, tt))
 			return false;
 	}
+	else if (phase == "S") {
+		if ( !travelTimeS(origin->hypocenter.lat, origin->hypocenter.lon, origin->hypocenter.dep, station->lat, station->lon, 0, delta, tt))
+			return false;
+	}
 	else {
 		SEISCOMP_WARNING_S("_associate got " + phase + " phase - ignored");
 		return false;
@@ -2145,9 +2150,16 @@ bool Autoloc3::_associate(Origin *origin, const Pick *pick, const std::string &p
 
 	double residual = pick->time - origin->time - tt.time;
 	Arrival arr(pick, phase, residual);
-	if ( ! _residualOK(arr, 0.9, 1.3))
-		return false;
-	arr.excluded = Arrival::NotExcluded;
+	if (phase == "S") {
+		if (std::abs(residual) > _config.maxSL2Residual)
+			return false;
+		arr.excluded = Arrival::UnusedPhase;
+	}
+	else {
+		if ( ! _residualOK(arr, 0.9, 1.3))
+			return false;
+		arr.excluded = Arrival::NotExcluded;
+	}
 
 	// passive association to imported origin
 	if (origin->imported)
@@ -2333,6 +2345,78 @@ bool Autoloc3::_addMorePicks(Origin *origin, bool keepDepth)
 	_rename_P_PKP(origin);
 
 	return true;
+}
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+bool Autoloc3::_addSPicks(Origin *origin)
+// Associate S picks from pickPool to an already-located origin.
+// Only attempts association at stations that already have a P pick in this
+// origin — S without a companion P is not reliable enough for refinement.
+// S picks are always marked UnusedPhase so they never affect relocation.
+{
+	// build set of station codes that have an associated P pick
+	std::set<std::string> pStations;
+	for (auto& arr : origin->arrivals) {
+		if (arr.excluded)
+			continue;
+		if (arr.phase != "P" && arr.phase != "PKP")
+			continue;
+		const Pick *pick = arr.pick.get();
+		if ( ! pick->station() )
+			continue;
+		pStations.insert(pick->station()->net + "." + pick->station()->code);
+	}
+
+	if (pStations.empty())
+		return false;
+
+	// build set of stations that already have an S pick associated
+	std::set<std::string> sStations;
+	for (auto& arr : origin->arrivals) {
+		if (arr.phase != "S")
+			continue;
+		const Pick *pick = arr.pick.get();
+		if ( ! pick->station() )
+			continue;
+		sStations.insert(pick->station()->net + "." + pick->station()->code);
+	}
+
+	int picksAdded = 0;
+	for (auto& item : pickPool) {
+		const Pick *pick = item.second.get();
+
+		if ( ! pick->station() )
+			continue;
+		if ( !_config.useManualPicks && manual(pick))
+			continue;
+		if (ignored(pick))
+			continue;
+		if (_blacklisted(pick))
+			continue;
+
+		std::string staKey = pick->station()->net + "." + pick->station()->code;
+
+		// only attempt S at stations with an associated P pick
+		if ( ! pStations.count(staKey))
+			continue;
+
+		// skip if this station already has an S pick
+		if (sStations.count(staKey))
+			continue;
+
+		if ( ! _associate(origin, pick, "S"))
+			continue;
+
+		sStations.insert(staKey);
+		picksAdded++;
+		SEISCOMP_INFO("origin %ld: associated S pick %s", origin->id, pick->label.c_str());
+	}
+
+	return picksAdded > 0;
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

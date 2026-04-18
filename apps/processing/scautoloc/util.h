@@ -45,7 +45,8 @@ std::string printOrigin(const Origin *origin, bool=false);
 int numberOfDefiningPhases(const Origin &origin);
 
 typedef Seiscomp::TravelTime TravelTime;
-bool travelTimeP (double lat1, double lon1, double dep1, double lat2, double lon2, double alt2, double delta, TravelTime&);
+bool travelTimeP(double lat1, double lon1, double dep1, double lat2, double lon2, double alt2, double delta, TravelTime&);
+bool travelTimeS(double lat1, double lon1, double dep1, double lat2, double lon2, double alt2, double delta, TravelTime&);
 
 std::string time2str(const Time &t);
 

@@ -82,6 +82,9 @@ class Autoloc3 {
 			// maximum residual of any pick to be kept associated
 			double maxResidualKeep{21.0};   // unit: s
 
+			// maximum residual for S-L2 pick association (post-location refinement only)
+			double maxSL2Residual{4.0};     // unit: s
+
 			// NOTE: maxRMS < maxResidualUse < maxResidualKeep
 			// typically:
 			//    maxResidualKeep = 3*maxResidualUse
@@ -392,6 +395,9 @@ class Autoloc3 {
 
 		// try to find and add more matching picks to origin
 		bool _addMorePicks(Origin*, bool keepDepth=false);
+
+		// try to associate S picks from pickPool to an already-located origin
+		bool _addSPicks(Origin*);
 
 		// try to associate a pick to an origin
 		// true if successful

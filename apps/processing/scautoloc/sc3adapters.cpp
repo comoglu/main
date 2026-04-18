@@ -100,8 +100,8 @@ Seiscomp::DataModel::Origin *convertToSC(const Autoloc::Origin* origin, bool all
 	for ( size_t i=0; i<arrivalCount; i++ ) {
 		const Autoloc::Arrival &arr = origin->arrivals[i];
 
-		// If not all (automatic) phases are requested, only include P and PKP
-		if ( !allPhases && automatic(arr.pick.get()) && arr.phase != "P" && arr.phase != "PKP") {
+		// If not all (automatic) phases are requested, only include P, PKP and S
+		if ( !allPhases && automatic(arr.pick.get()) && arr.phase != "P" && arr.phase != "PKP" && arr.phase != "S") {
 			SEISCOMP_DEBUG_S("SKIPPING 1  "+arr.pick->id);
 			continue;
 		}
