@@ -99,6 +99,25 @@
 					used in location. They will be loosely associated, though.
 					</description>
 				</parameter>
+				<group name="S">
+					<description>
+					Parameters controlling the association and use of S picks for
+					origin refinement. S picks are only attempted at stations that
+					already have an associated P pick.
+					</description>
+					<parameter name="maxResidual" type="double" default="4.0" unit="s">
+						<description>
+						Maximum time residual for associating an S pick to an origin.
+						S picks with a residual exceeding this value are rejected.
+						</description>
+					</parameter>
+					<parameter name="maxDist" type="double" default="20.0" unit="deg">
+						<description>
+						Maximum epicentral distance for associating S picks. Beyond this
+						distance S picks are not attempted.
+						</description>
+					</parameter>
+				</group>
 				<parameter name="amplTypeAbs" type="string" default="mb">
 					<description>
 					If this string is non-empty, an amplitude obtained from an amplitude
