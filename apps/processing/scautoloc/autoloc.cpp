@@ -2140,6 +2140,8 @@ bool Autoloc3::_associate(Origin *origin, const Pick *pick, const std::string &p
 			return false;
 	}
 	else if (phase == "S") {
+		if (delta > _config.maxSL2Dist)
+			return false;
 		if ( !travelTimeS(origin->hypocenter.lat, origin->hypocenter.lon, origin->hypocenter.dep, station->lat, station->lon, 0, delta, tt))
 			return false;
 	}
@@ -2153,7 +2155,7 @@ bool Autoloc3::_associate(Origin *origin, const Pick *pick, const std::string &p
 	if (phase == "S") {
 		if (std::abs(residual) > _config.maxSL2Residual)
 			return false;
-		arr.excluded = Arrival::UnusedPhase;
+		arr.excluded = Arrival::NotExcluded;
 	}
 	else {
 		if ( ! _residualOK(arr, 0.9, 1.3))
@@ -2182,7 +2184,7 @@ bool Autoloc3::_associate(Origin *origin, const Pick *pick, const std::string &p
 			arr.excluded = Arrival::UnusedPhase;
 		}
 	}
-	else {
+	else if (arr.phase != "S") {
 		arr.excluded = Arrival::UnusedPhase;
 	}
 

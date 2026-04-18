@@ -148,6 +148,12 @@ void App::createCommandLineDescription() {
 	commandline().addOption("Settings", "max-residual", "Maximum travel-time residual"
 	                        " per station to be considered.",
 	                        &_config.maxResidualUse);
+	commandline().addOption("Settings", "max-s-residual",
+	                        "Maximum S-pick residual for association.",
+	                        &_config.maxSL2Residual);
+	commandline().addOption("Settings", "max-s-dist",
+	                        "Maximum epicentral distance for S-pick association (degrees).",
+	                        &_config.maxSL2Dist);
 	commandline().addOption("Settings", "max-station-distance",
 	                        "Maximum distance of stations to be used.",
 	                        &_config.maxStaDist);
@@ -483,6 +489,12 @@ bool App::initConfiguration() {
 	catch ( ... ) {}
 
 	try { _config.dynamicPickThresholdInterval = configGetDouble("autoloc.dynamicPickThresholdInterval"); }
+	catch ( ... ) {}
+
+	try { _config.maxSL2Residual = configGetDouble("autoloc.S.maxResidual"); }
+	catch ( ... ) {}
+
+	try { _config.maxSL2Dist = configGetDouble("autoloc.S.maxDist"); }
 	catch ( ... ) {}
 
 	try { _gridConfigFile = Environment::Instance()->absolutePath(configGetString("autoloc.grid")); }
