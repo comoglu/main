@@ -16,12 +16,15 @@
 #define SEISCOMP_AUTOLOC_SCUTIL_H_INCLUDED
 
 #include <seiscomp/datamodel/origin.h>
+#include <seiscomp/datamodel/pick.h>
 
 namespace Seiscomp {
 
 	void logObjectCounts();
 
 	bool manual(const DataModel::Origin *origin);
+
+	std::string phaseHint(const DataModel::Pick*);
 
 	// Pick label used for logging.
 	// The goal is to display much information as possible as a relatively short string.
