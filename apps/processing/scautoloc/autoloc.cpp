@@ -2402,9 +2402,12 @@ bool Autoloc3::_addSPicks(Origin *origin)
 		if (_blacklisted(pick))
 			continue;
 
-		// only consider picks that scautopick labelled as S
+		// only consider picks that scautopick labelled as an S phase
+		// (phaseHint starting with 'S': "S", "Sg", "Sn", etc.)
 		const auto *scpick = dynamic_cast<const Seiscomp::DataModel::Pick*>(pick->attachment.get());
-		if ( !scpick || Seiscomp::phaseHint(scpick) != "S" )
+		if ( !scpick ) continue;
+		const std::string hint = Seiscomp::phaseHint(scpick);
+		if ( hint.empty() || hint[0] != 'S' )
 			continue;
 
 		std::string staKey = pick->station()->net + "." + pick->station()->code;
