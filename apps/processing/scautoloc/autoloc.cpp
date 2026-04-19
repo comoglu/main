@@ -2358,8 +2358,10 @@ bool Autoloc3::_addSPicks(Origin *origin)
 // Associate S picks from pickPool to an already-located origin.
 // Only attempts association at stations that already have a P pick in this
 // origin — S without a companion P is not reliable enough for refinement.
-// S picks are always marked UnusedPhase so they never affect relocation.
 {
+	if ( ! _config.useSPicks )
+		return false;
+
 	// build set of station codes that have an associated P pick
 	std::set<std::string> pStations;
 	for (auto& arr : origin->arrivals) {

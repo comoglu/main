@@ -82,6 +82,9 @@ class Autoloc3 {
 			// maximum residual of any pick to be kept associated
 			double maxResidualKeep{21.0};   // unit: s
 
+			// enable S pick association for origin refinement
+			bool useSPicks{false};
+
 			// maximum residual for S-L2 pick association
 			double maxSL2Residual{4.0};     // unit: s
 

@@ -105,6 +105,13 @@
 					origin refinement. S picks are only attempted at stations that
 					already have an associated P pick.
 					</description>
+					<parameter name="enable" type="boolean" default="false">
+						<description>
+						Enable association of S picks for origin refinement.
+						When enabled, S picks at stations with an associated P pick
+						are used to improve the location solution.
+						</description>
+					</parameter>
 					<parameter name="maxResidual" type="double" default="4.0" unit="s">
 						<description>
 						Maximum time residual for associating an S pick to an origin.

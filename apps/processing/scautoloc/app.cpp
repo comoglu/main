@@ -491,6 +491,9 @@ bool App::initConfiguration() {
 	try { _config.dynamicPickThresholdInterval = configGetDouble("autoloc.dynamicPickThresholdInterval"); }
 	catch ( ... ) {}
 
+	try { _config.useSPicks = configGetBool("autoloc.S.enable"); }
+	catch ( ... ) {}
+
 	try { _config.maxSL2Residual = configGetDouble("autoloc.S.maxResidual"); }
 	catch ( ... ) {}
 
