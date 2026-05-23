@@ -30,8 +30,7 @@ namespace Autoloc {
 void AutolocConfig::dump() const {
 	SEISCOMP_INFO("Configuration:");
 	SEISCOMP_INFO("  locator");
-	SEISCOMP_INFO("    profile                          %s",     locatorProfile);
-	SEISCOMP_INFO("    default depth                    %g km",  defaultDepth);
+	SEISCOMP_INFO("    profile                          %s",     locatorProfile.c_str());
 	SEISCOMP_INFO("    minimum depth                    %g km",  minimumDepth);
 	SEISCOMP_INFO("  buffer");
 	SEISCOMP_INFO("    picks kept in buffer             %.0f s", maxAge);
@@ -41,7 +40,7 @@ void AutolocConfig::dump() const {
 	SEISCOMP_INFO("    maxResidual                      %.1f s", maxResidualUse);
 	SEISCOMP_INFO("    maxResidual for keeping picks    %.1f s", maxResidualKeep);
 	SEISCOMP_INFO("    minPhaseCount                    %d",     minPhaseCount);
-	SEISCOMP_INFO("    maxDepth                         %.1f km", maxDepth);
+	SEISCOMP_INFO("  depthLookup type:                 %s",     depthLookupType.c_str());
 	SEISCOMP_INFO("    minStaCountIgnorePKP             %d",     minStaCountIgnorePKP);
 	SEISCOMP_INFO("    defaultDepthStickiness           %g",     defaultDepthStickiness);
 	SEISCOMP_INFO("    tryDefaultDepth                  %s",     tryDefaultDepth ? "true":"false");

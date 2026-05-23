@@ -27,6 +27,8 @@
 #include "config.h"
 #include "stationconfig.h"
 
+#include <seiscomp/seismology/depthlookup.h>
+
 namespace Seiscomp {
 
 namespace Autoloc {
@@ -323,6 +325,7 @@ class Autoloc3 {
 		OriginVector _origins;
 		AutolocConfig _config;
 		StationConfig _stationConfig;
+		Seiscomp::Seismology::DepthLookupPtr _depthLookup;
 };
 
 

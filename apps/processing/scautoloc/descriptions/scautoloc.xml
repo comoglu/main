@@ -12,16 +12,6 @@
 					The locator profile to use.
 					</description>
 				</parameter>
-				<parameter name="defaultDepth" type="double" default="10" unit="km">
-					<description>
-					For each location, scautoloc performs checks to test if the
-					depth estimate is reliable. If the same location quality
-					(e.g. pick RMS) can be achieved while fixing the depth to
-					the default depth, the latter is used. This is most often
-					the case for shallow events with essentially no depth
-					resolution.
-					</description>
-				</parameter>
 				<parameter name="minimumDepth" type="double" default="5" unit="km">
 					<description>
 					The locator might converge at a depth of 0 or even negative
@@ -74,17 +64,12 @@
 					Minimum number of phases for reporting origins.
 					</description>
 				</parameter>
-				<parameter name="maxDepth" type="double" default="1000" unit="km">
-					<description>
-					Maximum permissible depth for reporting origins.
-					</description>
-				</parameter>
 				<parameter name="maxSGAP" type="double" default="360" unit="deg">
 					<description>
 					Maximum secondary azimuthal gap for an origin to be reported by.
 					The secondary gap is the maximum of the sum of 2 station gaps.
 
-					360: No restriction due to this parameter.
+					Default: 360 degrees, i.e. no restriction based on this parameter.
 					</description>
 				</parameter>
 				<parameter name="maxStationDistance" type="double" default="180" unit="deg">
@@ -110,15 +95,8 @@
 				</parameter>
 				<parameter name="amplTypeSNR" type="string" default="snr">
 					<description>
-					If this string is non-empty, it is used to obtain a pick SNR
-					from an amplitude object which is compared against
-					&quot;minPickSNR&quot;. If the parameter is empty, the pick
-					SNR is 10.
-					</description>
-				</parameter>
-				<parameter name="minPickSNR" type="double" default="3" unit="">
-					<description>
-					Minimum SNR value of a pick to be considered.
+					If this string is non-empty, it is used to obtain a pick SNR from an
+					amplitude object. If it is empty, the pick SNR is 10.
 					</description>
 				</parameter>
 				<parameter name="grid" type="file" default="@DATADIR@/scautoloc/grid.conf" options="read">
@@ -133,12 +111,9 @@
 				</parameter>
 				<parameter name="stationLocations" type="file" default="" options="read">
 					<description>
-					The station file to be used when in offline mode. An example
-					is &quot;@DATADIR@/scautoloc/station-locations.conf&quot;.
-					If no file is given, the database is used. Instead of this
-					parameter you may also provide full inventory XML by
-					configuring &quot;database.inventory&quot; or by the
-					command-line option '--inventory-db'.
+					The station file to be used when in offline mode.
+					If no file is given the database is used. An example is given
+					in &quot;@DATADIR@/scautoloc/station-locations.conf&quot;.
 					</description>
 				</parameter>
 				<parameter name="useManualPicks" type="boolean" default="false">
@@ -162,8 +137,8 @@
 				</parameter>
 				<parameter name="adoptManualDepth" type="boolean" default="true">
 					<description>
-					Adopt the depth from manual origins. Otherwise the default depth
-					in locator.defaultDepth is considered.
+					Adopt the depth from manual origins. Otherwise the configured
+					default depth from the active DepthLookup backend is used.
 					</description>
 				</parameter>
 				<parameter name="authors" type="list:string">
@@ -175,8 +150,9 @@
 				</parameter>
 				<parameter name="tryDefaultDepth" type="boolean" default="true">
 					<description>
-					Compare located origin with the origin at the depth given by
-					locator.defaultDepth. The origin with lower RMS is reported.
+					Compare located origin with the origin at the default depth
+					returned by the active DepthLookup backend. The origin with
+					lower RMS is reported.
 					</description>
 				</parameter>
 				<parameter name="publicationIntervalTimeSlope" type="double" unit="s/count" default="0.5">
@@ -248,6 +224,63 @@
 						Maximum depth for creating origins based on XXL arrivals.
 						</description>
 					</parameter>
+				</group>
+
+				<parameter name="depthLookup" type="string" default="Constant">
+					<description>
+					DepthLookup backend to use for region- and slab-based depth
+					lookup. Each backend owns its own configuration namespace.
+					Available values:
+
+					- "Constant" (default): returns the fixed depth set in
+					  depths.constant.value. No plugin required.
+					- "Polygon": looks up the origin against named polygon
+					  features loaded by SeisComP's GeoFeatureSet.
+					  Configure depths.polygon.regions and
+					  depths.polygon.fallback.
+					- "Slab2": uses USGS Slab2.0 depth-footprint contours.
+					  Requires the dlslab2 plugin (core.plugins = dlslab2).
+					  Configure dlslab2.directory and dlslab2.fallback.
+
+					The selected backend is mandatory — scautoloc will not start
+					if the backend type is unknown or fails to initialise.
+
+					Example for Slab2:
+					  core.plugins = dlslab2
+					  autoloc.depthLookup = Slab2
+					</description>
+				</parameter>
+
+				<group name="depths">
+					<group name="constant">
+						<parameter name="value" type="double" default="10" unit="km">
+							<description>
+							Constant default depth returned by the "Constant"
+							DepthLookup backend for any location.
+							</description>
+						</parameter>
+					</group>
+					<group name="polygon">
+						<parameter name="regions" type="list:string" default="">
+							<description>
+							Ordered, comma-separated list of polygon feature names
+							(from BNA or GeoJSON files in @DATADIR@/spatial/vector/)
+							used when autoloc.depthLookup = Polygon. Each feature
+							must carry a "defaultDepth" attribute (km) and may carry
+							a "maxDepth" attribute (km). The first polygon containing
+							the origin location is used.
+
+							Example:
+							depths.polygon.regions = sumatra_slab, stable_craton
+							</description>
+						</parameter>
+						<parameter name="fallback" type="double" default="10" unit="km">
+							<description>
+							Depth returned by the "Polygon" backend when the origin
+							is outside all configured polygon regions.
+							</description>
+						</parameter>
+					</group>
 				</group>
 			</group>
 		</configuration>
@@ -347,57 +380,151 @@
 					and association.
 					</description>
 				</option>
-				<option flag="" long-flag="station-locations" argument="arg" param-ref="autoloc.stationLocations"/>
-				<option flag="" long-flag="station-config" argument="arg" param-ref="autoloc.stationConfig"/>
-				<option flag="" long-flag="grid" argument="arg" param-ref="autoloc.grid"/>
-				<option flag="" long-flag="pick-log" argument="arg" param-ref="autoloc.pickLog"/>
-				<option flag="" long-flag="default-depth" argument="arg" param-ref="locator.defaultDepth"/>
-				<option flag="" long-flag="max-sgap" argument="arg" param-ref="autoloc.maxSGAP"/>
-				<option flag="" long-flag="max-rms" argument="arg" param-ref="autoloc.maxRMS"/>
-				<option flag="" long-flag="max-residual" argument="arg" param-ref="autoloc.maxResidual"/>
-				<option flag="" long-flag="max-station-distance" argument="arg" param-ref="autoloc.maxStationDistance"/>
-				<option flag="" long-flag="max-nucleation-distance-default" argument="arg" default="180" unit="deg">
+				<option flag="" long-flag="station-locations" argument="arg" default="">
+					<description>
+					The station-locations.conf file to use when in
+					offline mode (started with --offline).
+					If no file is given the database is used.
+					</description>
+				</option>
+
+				<option flag="" long-flag="station-config" argument="arg" default="">
+					<description>
+					The station configuration file. Examples are in @DATADIR@/scautoloc/
+					</description>
+				</option>
+
+				<option flag="" long-flag="grid" argument="arg" default="">
+					<description>
+					The grid configuration file. Examples are in @DATADIR@/scautoloc/
+					</description>
+				</option>
+
+				<option flag="" long-flag="pick-log" argument="arg" default="">
+					<description>
+					The pick log file. Providing a file name enables logging picks
+					even when disabled by configuration.
+					</description>
+				</option>
+				<option flag="" long-flag="default-depth" argument="arg" default="10">
+					<description>
+					Default depth for comparison with the depth after locating.
+					</description>
+				</option>
+
+				<option flag="" long-flag="max-sgap" argument="arg" default="360">
+					<description>
+					Maximum secondary azimuthal gap for an origin to be reported.
+					The secondary gap is the maximum of the sum of 2 station gaps.
+					</description>
+				</option>
+
+				<option flag="" long-flag="max-rms" argument="arg" default="3.5">
+					<description>
+					Maximum travel-time RMS for a location to be reported.
+					</description>
+				</option>
+
+				<option flag="" long-flag="max-residual" argument="arg" default="3">
+					<description>
+					Maximum travel-time residual (unweighted) for a pick at a
+					station to be used.
+					</description>
+				</option>
+
+				<option flag="" long-flag="max-station-distance" argument="arg" default="5">
+					<description>
+					Maximum distance of stations to be used.
+					</description>
+				</option>
+
+				<option flag="" long-flag="max-nucleation-distance-default" argument="arg" default="180">
 					<description>
 					Default maximum distance of stations to be used for nucleating new origins.
 					</description>
 				</option>
-				<option flag="" long-flag="min-pick-affinity" argument="arg" default="0.05"/>
-				<option flag="" long-flag="min-phase-count" argument="arg" param-ref="autoloc.minPhaseCount"/>
+
+				<option flag="" long-flag="min-pick-affinity" argument="arg" default="0.05">
+					<description></description>
+				</option>
+
+				<option flag="" long-flag="min-phase-count" argument="arg" default="4">
+					<description>
+					Minimum number of picks for an origin to be reported.</description>
+				</option>
+
 				<option flag="" long-flag="min-score" argument="arg" default="8">
 					<description>
 					Minimum score for an origin to be reported.
 					</description>
 				</option>
-				<option flag="" long-flag="min-pick-snr" argument="arg" param-ref="autoloc.minPickSNR"/>
-				<option flag="" long-flag="min-sta-count-ignore-pkp" argument="arg" param-ref="autoloc.minStaCountIgnorePKP"/>
+
+				<option flag="" long-flag="min-pick-snr" argument="arg" default="3">
+					<description>
+					Minimum SNR for a pick to be processed.
+					</description>
+				</option>
+
+				<option flag="" long-flag="threshold-xxl" argument="arg" default="10000000">
+					<description>
+					An amplitude exceeding this threshold will flag the pick as XXL.
+					</description>
+				</option>
+
+				<option flag="" long-flag="min-phase-count-xxl" argument="arg" default="4">
+					<description>
+					Minimum number of picks for an XXL origin to be reported.
+					</description>
+				</option>
+
+				<option flag="" long-flag="max-distance-xxl" argument="arg" default="15">
+					<description></description>
+				</option>
+
+				<option flag="" long-flag="min-sta-count-ignore-pkp" argument="arg" default="15">
+					<description>
+					Minimum station count for which we ignore PKP phases.
+					</description>
+				</option>
 
 				<option flag="" long-flag="min-score-bypass-nucleator" argument="arg" default="40">
 					<description>
 					Minimum score at which the nucleator is bypassed.
 					</description>
 				</option>
-				<option flag="" long-flag="keep-events-timespan" argument="arg" param-ref="buffer.originKeep"/>
-				<option flag="" long-flag="cleanup-interval" argument="arg" param-ref="buffer.cleanupInterval"/>
-				<option flag="" long-flag="max-age" argument="arg" param-ref="buffer.pickKeep"/>
+
+				<option flag="" long-flag="keep-events-timespan" argument="arg" default="86400">
+					<description>
+					The timespan to keep historical events.
+					</description>
+				</option>
+
+				<option flag="" long-flag="cleanup-interval" argument="arg" default="3600">
+					<description>
+					The object cleanup interval in seconds.
+					</description>
+				</option>
+
+				<option flag="" long-flag="max-age" argument="arg" default="3784320000">
+					<description>
+					During cleanup all pick objects older than maxAge (in seconds)
+					are removed (maxAge == 0 disables cleanup).
+					</description>
+				</option>
+
 				<option flag="" long-flag="wakeup-interval" argument="arg" default="5" unit="s">
 					<description>
 					The interval in seconds to check pending operations.
 					</description>
 				</option>
-				<option flag="" long-flag="dynamic-pick-threshold-interval" argument="arg" default="3600" unit="s">
+
+				<option flag="" long-flag="dynamic-pick-threshold-interval" argument="arg" default="60">
 					<description>
 					The interval in seconds in which to check for extraordinarily
 					high pick activity, resulting in a dynamically increased
 					pick threshold.
 					</description>
 				</option>
-
-				<option flag="" long-flag="xxl-enable" argument="arg" param-ref="autoloc.xxl.enable"/>
-				<option flag="" long-flag="xxl-min-amplitude" argument="arg" param-ref="autoloc.xxl.minAmplitude"/>
-				<option flag="" long-flag="xxl-min-snr" argument="arg" param-ref="autoloc.xxl.minSNR"/>
-				<option flag="" long-flag="xxl-min-phase-count" argument="arg" param-ref="autoloc.xxl.minPhaseCount"/>
-				<option flag="" long-flag="xxl-max-distance" argument="arg" param-ref="autoloc.xxl.maxStationDistance"/>
-				<option flag="" long-flag="xxl-max-depth" argument="arg" param-ref="autoloc.xxl.maxDepth"/>
 			</group>
 			<group name="Output">
 				<option flag="f" long-flag="formatted">

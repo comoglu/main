@@ -124,9 +124,6 @@ void AutolocApp::createCommandLineDescription() {
 	                        "The pick log file. Providing a file name enables "
 	                        "logging picks even when disabled by configuration.",
 	                        &_config.pickLogFile, false);
-	commandline().addOption("Settings", "default-depth",
-	                        "Default depth for locating",
-	                        &_config.defaultDepth);
 	commandline().addOption("Settings", "default-depth-stickiness",
 	                        "",
 	                        &_config.defaultDepthStickiness);
@@ -370,7 +367,7 @@ bool AutolocApp::initConfiguration() {
 	try { _config.locatorProfile = configGetString("locator.profile"); }
 	catch (...) {}
 
-	try { _config.defaultDepth = configGetDouble("locator.defaultDepth"); }
+	try { _config.depthLookupType = configGetString("autoloc.depthLookup"); }
 	catch (...) {}
 
 	try { _config.minimumDepth = configGetDouble("locator.minimumDepth"); }
@@ -380,9 +377,6 @@ bool AutolocApp::initConfiguration() {
 	catch (...) {}
 
 	try { _config.maxRMS = configGetDouble("autoloc.maxRMS"); }
-	catch (...) {}
-
-	try { _config.maxDepth = configGetDouble("autoloc.maxDepth"); }
 	catch (...) {}
 
 	try { _config.maxResidualUse = configGetDouble("autoloc.maxResidual"); }
