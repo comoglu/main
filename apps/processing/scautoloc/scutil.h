@@ -30,6 +30,8 @@ namespace Seiscomp {
 
 	bool rejected(const Seiscomp::DataModel::Pick*);
 
+	std::string phaseHint(const Seiscomp::DataModel::Pick*);
+
 	std::string evaluationStatus(const Seiscomp::DataModel::Pick*);
 	std::string evaluationStatus(const Seiscomp::DataModel::Origin*);
 	std::string evaluationMode(const Seiscomp::DataModel::Origin*);

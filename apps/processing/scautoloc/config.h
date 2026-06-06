@@ -215,6 +215,11 @@ struct AutolocConfig {
 		// The station configuration file
 		std::string staConfFile{"@DATADIR@/scautoloc/station.conf"};
 
+		// S-pick association for origin refinement
+		bool   useSPicks{false};
+		double maxSL2Residual{4.0};  // unit: s
+		double maxSL2Dist{20.0};     // unit: degrees
+
 		// Misc. experimental options
 		bool aggressivePKP{true};
 		bool reportAllPhases{true};

@@ -155,6 +155,12 @@ void AutolocApp::createCommandLineDescription() {
 	                        &_config.xxlMaxStaDist);
 	commandline().addOption("Settings", "xxl-max-depth", "",
 	                        &_config.xxlMaxDepth);
+	commandline().addOption("Settings", "max-s-residual",
+	                        "Maximum S-pick residual for association.",
+	                        &_config.maxSL2Residual);
+	commandline().addOption("Settings", "max-s-dist",
+	                        "Maximum epicentral distance for S-pick association (degrees).",
+	                        &_config.maxSL2Dist);
 	commandline().addOption("Settings", "xxl-dead-time", "",
 	                        &_config.xxlDeadTime);
 	commandline().addOption("Settings", "min-sta-count-ignore-pkp",
@@ -307,6 +313,15 @@ bool AutolocApp::initConfiguration() {
 	try {
 		_config.maxDepth = configGetDouble("autoloc.maxDepth");
 	}
+	catch ( ... ) {}
+
+	try { _config.useSPicks = configGetBool("autoloc.S.enable"); }
+	catch ( ... ) {}
+
+	try { _config.maxSL2Residual = configGetDouble("autoloc.S.maxResidual"); }
+	catch ( ... ) {}
+
+	try { _config.maxSL2Dist = configGetDouble("autoloc.S.maxDist"); }
 	catch ( ... ) {}
 
 	try {

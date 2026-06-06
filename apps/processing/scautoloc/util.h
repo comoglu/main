@@ -63,6 +63,11 @@ bool travelTimeP (
 	double lat2, double lon2, double alt2,
 	double delta, TravelTime&);
 
+bool travelTimeS (
+	double lat1, double lon1, double dep1,
+	double lat2, double lon2, double alt2,
+	double delta, TravelTime&);
+
 
 // Format an Autoloc::DataModel::Time time as time stamp.
 std::string time2str(const Time &t);

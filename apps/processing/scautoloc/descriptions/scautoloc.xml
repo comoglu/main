@@ -79,6 +79,29 @@
 					Maximum permissible depth for reporting origins.
 					</description>
 				</parameter>
+				<group name="S">
+					<description>
+					Parameters for S-pick association in origin refinement.
+					</description>
+					<parameter name="enable" type="boolean" default="false">
+						<description>
+						Enable S-pick association for origin refinement. When enabled,
+						scautoloc will attempt to associate S picks at stations that
+						already have an associated P pick, using the configured
+						residual and distance limits.
+						</description>
+					</parameter>
+					<parameter name="maxResidual" type="double" default="4.0" unit="s">
+						<description>
+						Maximum S-pick time residual for association.
+						</description>
+					</parameter>
+					<parameter name="maxDist" type="double" default="20.0" unit="deg">
+						<description>
+						Maximum epicentral distance for S-pick association.
+						</description>
+					</parameter>
+				</group>
 				<parameter name="maxSGAP" type="double" default="360" unit="deg">
 					<description>
 					Maximum secondary azimuthal gap for an origin to be reported by.

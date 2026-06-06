@@ -246,6 +246,7 @@ class Autoloc {
 
 		// try to find and add more matching picks to origin
 		bool _addMorePicks(AutolocInternal::Origin*, bool keepDepth=false);
+		bool _addSPicks(AutolocInternal::Origin*);
 
 		// try to associate a pick to an origin
 		// true if successful

@@ -190,6 +190,40 @@ bool travelTimeP(double lat1, double lon1, double dep1, double lat2, double lon2
 
 
 // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+bool travelTimeS(double lat1, double lon1, double dep1, double lat2, double lon2, double alt2, double delta, TravelTime &result) {
+	static TravelTimeTable ttt;
+
+	TravelTimeList *ttlist { nullptr };
+
+	try {
+		ttlist = ttt.compute(lat1, lon1, std::max(dep1, 0.01), lat2, lon2, alt2);
+	}
+	catch ( std::out_of_range & ) {
+		return false;
+	}
+	if ( !ttlist ) {
+		return false;
+	}
+
+	bool found = false;
+	for ( auto& tt : *ttlist ) {
+		if ( tt.phase.empty() || tt.phase[0] != 'S' ) {
+			continue;
+		}
+		result = tt;
+		found = true;
+		break;
+	}
+	delete ttlist;
+
+	return found;
+}
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 std::string time2str(const AutolocInternal::Time &t) {
 	return sctime(t).toString("%F %T.%f000000").substr(0, 21);
 }
@@ -559,7 +593,7 @@ DataModel::Origin *convertToSC(const AutolocInternal::Origin* origin, const std:
 		const AutolocInternal::Arrival &arr = origin->arrivals[i];
 
 		// If not all (automatic) phases are requested, only include P and PKP
-		if ( !allPhases && automatic(arr.pick.get()) && arr.phase != "P" && arr.phase != "PKP" ) {
+		if ( !allPhases && automatic(arr.pick.get()) && arr.phase != "P" && arr.phase != "PKP" && arr.phase != "S" ) {
 			SEISCOMP_DEBUG_S("SKIPPING 1  " + arr.pick->id());
 			continue;
 		}

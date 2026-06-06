@@ -2122,6 +2122,7 @@ bool Autoloc::_rework(Origin *origin) {
 
 	_ensureAcceptableRMS(origin, keepDepth);
 	_addMorePicks(origin, keepDepth);
+	_addSPicks(origin);
 
 	_trimResiduals(origin); // again!
 	_removeOutliers(origin);
@@ -2454,6 +2455,12 @@ bool Autoloc::_associate(Origin *origin, const Pick *pick, const std::string &ph
 		if ( !travelTimeP(origin->hypocenter.lat, origin->hypocenter.lon, origin->hypocenter.dep, station->lat, station->lon, 0, delta, tt))
 			return false;
 	}
+	else if ( phase == "S" ) {
+		if ( delta > _config.maxSL2Dist )
+			return false;
+		if ( !travelTimeS(origin->hypocenter.lat, origin->hypocenter.lon, origin->hypocenter.dep, station->lat, station->lon, 0, delta, tt))
+			return false;
+	}
 	else {
 		SEISCOMP_WARNING_S("_associate got " + phase + " phase - ignored");
 		return false;
@@ -2461,10 +2468,17 @@ bool Autoloc::_associate(Origin *origin, const Pick *pick, const std::string &ph
 
 	double residual = pick->time - origin->time - tt.time;
 	Arrival arr(pick, phase, residual);
-	if ( !_residualOK(arr, 0.9, 1.3) ) {
-		return false;
+	if ( phase == "S" ) {
+		if ( std::abs(residual) > _config.maxSL2Residual )
+			return false;
+		arr.excluded = Arrival::NotExcluded;
 	}
-	arr.excluded = Arrival::NotExcluded;
+	else {
+		if ( !_residualOK(arr, 0.9, 1.3) ) {
+			return false;
+		}
+		arr.excluded = Arrival::NotExcluded;
+	}
 
 	// passive association to imported origin
 	if ( origin->imported ) {
@@ -2488,7 +2502,7 @@ bool Autoloc::_associate(Origin *origin, const Pick *pick, const std::string &ph
 			arr.excluded = Arrival::UnusedPhase;
 		}
 	}
-	else {
+	else if ( arr.phase != "S" ) {
 		arr.excluded = Arrival::UnusedPhase;
 	}
 
@@ -2594,6 +2608,88 @@ bool Autoloc::_associate(Origin *origin, const Pick *pick, const std::string &ph
 
 	SEISCOMP_DEBUG_S(" ADD " + printOneliner(origin) + " add " + arr.pick->label + " " + arr.phase);
 	return true;
+}
+// <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+
+// >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+bool Autoloc::_addSPicks(Origin *origin)
+// Associate S picks from pickPool to an already-located origin.
+// Only attempts association at stations that already have a P pick in
+// this origin — S without a companion P is not reliable enough for refinement.
+{
+	using namespace AutolocInternal;
+
+	if ( !_config.useSPicks )
+		return false;
+
+	// build set of station codes that have an associated P pick
+	std::set<std::string> pStations;
+	for ( auto& arr : origin->arrivals ) {
+		if ( arr.excluded )
+			continue;
+		if ( arr.phase != "P" && arr.phase != "PKP" )
+			continue;
+		const Pick *pick = arr.pick.get();
+		if ( !pick->station() )
+			continue;
+		pStations.insert(pick->station()->net + "." + pick->station()->code);
+	}
+
+	if ( pStations.empty() )
+		return false;
+
+	// build set of stations that already have an S pick associated
+	std::set<std::string> sStations;
+	for ( auto& arr : origin->arrivals ) {
+		if ( arr.phase != "S" )
+			continue;
+		const Pick *pick = arr.pick.get();
+		if ( !pick->station() )
+			continue;
+		sStations.insert(pick->station()->net + "." + pick->station()->code);
+	}
+
+	int picksAdded = 0;
+	for ( auto& item : pickPool ) {
+		const Pick *pick = item.second.get();
+
+		if ( !pick->station() )
+			continue;
+		if ( !_config.useManualPicks && manual(pick) )
+			continue;
+		if ( ignored(pick) )
+			continue;
+		if ( _blacklisted(pick) )
+			continue;
+
+		// only consider picks labelled as S by scautopick (phaseHint starts with 'S')
+		if ( !pick->scpick ) continue;
+		const std::string hint = Seiscomp::phaseHint(pick->scpick.get());
+		if ( hint.empty() || hint[0] != 'S' )
+			continue;
+
+		std::string staKey = pick->station()->net + "." + pick->station()->code;
+
+		// only attempt S at stations with an associated P pick
+		if ( !pStations.count(staKey) )
+			continue;
+
+		// skip if this station already has an S pick
+		if ( sStations.count(staKey) )
+			continue;
+
+		if ( !_associate(origin, pick, "S") )
+			continue;
+
+		sStations.insert(staKey);
+		picksAdded++;
+		SEISCOMP_INFO("origin %ld: associated S pick %s", origin->id, pick->label.c_str());
+	}
+
+	return picksAdded > 0;
 }
 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
