@@ -96,7 +96,7 @@
 						Maximum S-pick time residual for association.
 						</description>
 					</parameter>
-					<parameter name="maxDist" type="double" default="20.0" unit="deg">
+					<parameter name="maxDist" type="double" default="8.0" unit="deg">
 						<description>
 						Maximum epicentral distance for S-pick association.
 						</description>

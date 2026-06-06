@@ -218,7 +218,7 @@ struct AutolocConfig {
 		// S-pick association for origin refinement
 		bool   useSPicks{false};
 		double maxSL2Residual{4.0};  // unit: s
-		double maxSL2Dist{20.0};     // unit: degrees
+		double maxSL2Dist{8.0};      // unit: degrees
 
 		// Misc. experimental options
 		bool aggressivePKP{true};
