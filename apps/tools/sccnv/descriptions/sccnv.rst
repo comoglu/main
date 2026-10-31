@@ -35,6 +35,21 @@ Different formats are supported for input and output files.
 but can be realized by system tools. Read section :ref:`sec-sccnv-quakeml` for
 details and instructions.
 
+Input and output are given as ``[format:][file]``. Without file, stdin or stdout
+is used. Without format, the format of an input file is detected from its
+content: SCML, Arclink XML, JSON and vbinary are recognized. Files
+which cannot be detected are read as SCML. Output is written in SCML unless
+another format is given.
+
+The part in front of the first colon is only considered as format if it is the
+name of a supported format. Hence, input file names containing colons, e.g.,
+time stamps, can be given without format. Output file names containing colons
+require stating the format or the path, e.g., ``scml:2024-01-01T10:00:00.xml``
+or ``./2024-01-01T10:00:00.xml``.
+
+Input in formats provided by plugins requires loading the plugin, e.g.
+FDSN StationXML with ``--plugins fdsnxml``.
+
 
 .. _sec-sccnv-quakeml:
 
@@ -87,6 +102,19 @@ Examples
   .. code-block:: sh
 
      $ sccnv -i seiscomp.xml -o qml1.2:quakeml.xml
+
+* Convert an event parameter file in JSON format, detected automatically, to
+  formatted :term:`SCML` and write the content to stdout:
+
+  .. code-block:: sh
+
+     $ sccnv -i event.json -f
+
+* Convert from stdin to stdout, e.g., as part of a pipe:
+
+  .. code-block:: sh
+
+     $ cat event.json | sccnv -i json: > event.xml
 
 * Convert an inventory file in Arclink XML format to :term:`SCML` and store the
   content in a file:

@@ -36,7 +36,15 @@
 			<group name="Input">
 				<option flag="i" long-flag="input" argument="arg" default="scml:-">
 					<description>
-					Input stream [format:][file].
+					Input stream [format:][file]. Without format, the format
+					of input files is detected from the content, falling back
+					to scml.
+					</description>
+				</option>
+				<option flag="" long-flag="strict">
+					<description>
+					Exit with an error if the input is read with errors
+					instead of converting what was read.
 					</description>
 				</option>
 			</group>
