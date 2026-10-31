@@ -18,9 +18,7 @@ Different formats are supported for input and output files.
 
    arclink    ; `Arclink XML <https://www.seiscomp.de/seiscomp3/doc/applications/arclink-status-xml.html>`_ ;    X    ;    X
    binary     ; :ref:`SeisComP data model <api-datamodel-python>` in binary format: low-weight and fast     ;    X    ;    X
-   bson       ;                                                                                             ;    X    ;    X
-   bson-json  ;                                                                                             ;         ;    X
-   csv        ; comma-separated values                                                                      ;         ;    X
+   csv       ; comma-separated values                                                                      ;         ;    X
    hyp71sum2k ; Hypo71 format                                                                               ;         ;    X
    ims10      ;                                                                                             ;         ;    X
    json       ; :cite:t:`json` format                                                                       ;    X    ;    X
@@ -29,7 +27,7 @@ Different formats are supported for input and output files.
    scdm0.51   ;                                                                                             ;    X    ;    X
    scml       ; SeisComP XML (:term:`SCML`) - :ref:`SCML API <api-datamodel-python>`                        ;    X    ;    X
    trunk      ; same as scml, classic way of stating this format                                            ;    X    ;    X
-   vbson      ;                                                                                             ;    X    ;    X
+   vbinary    ; binary format with a header which allows format detection                                   ;    X    ;    X
 
 **\***: The conversion from files in QuakeML format is not supported by sccnv
 but can be realized by system tools. Read section :ref:`sec-sccnv-quakeml` for
