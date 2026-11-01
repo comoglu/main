@@ -80,7 +80,15 @@ limitations as well as examples on their application.
 
 The style sheets can be used along with other stylesheet converter tools provided
 by your system, e.g., :program:`xalan` or :program:`xsltproc`. Examples are given
-in section :ref:`sec-sccnv-examples`.
+in section :ref:`sec-sccnv-examples`. When given a QuakeML file, sccnv stops
+with an error showing the command to convert it.
+
+QuakeML public IDs are rather long, e.g., ``quakeml:us.anss.org/event/6000q41n``,
+and the slashes cause problems when used on the command line or in file names.
+The parameter ``ID_PREFIX`` of the stylesheet removes a prefix from all public
+IDs and references. Further parameters control, e.g., the construction of event
+IDs. Recommended settings for some agencies are listed in the header of the
+stylesheet.
 
 
 .. _sec-sccnv-examples:
@@ -128,8 +136,19 @@ Examples
 
      $ sccnv -i scml:event.xml -o ims10:event.ims
 
-* Convert QuakeML in version 1.2 to SCML in data schema version 0.12:
+* Convert QuakeML in version 1.2 to SCML in data schema version 0.14:
 
   .. code-block:: sh
 
-     $ xsltproc $SEISCOMP_ROOT/share/xml/0.12/quakeml_1.2__sc3ml_0.12.xsl file.quakeml > file_sc.xml
+     $ xsltproc $SEISCOMP_ROOT/share/xml/0.14/quakeml_1.2__scml_0.14.xsl file.quakeml > file_sc.xml
+
+* Convert QuakeML from USGS to SCML with short public IDs using the parameters
+  recommended for USGS in the stylesheet:
+
+  .. code-block:: sh
+
+     $ xsltproc --stringparam ID_PREFIX quakeml:us.anss.org/ \
+                --param BUILD_EVENT_ID 2 --param GUESS_MAG_ORIGIN 3 \
+                --param EVENT_INFO_ID 1 \
+                $SEISCOMP_ROOT/share/xml/0.14/quakeml_1.2__scml_0.14.xsl \
+                us6000q41n.xml > us6000q41n_sc.xml

@@ -303,11 +303,17 @@ class ConvertApp : public Application {
 					if ( inputFormat == "quakeml" ) {
 						std::string version = Core::toString(int(DataModel::Version::Major)) + "." +
 						                      Core::toString(int(DataModel::Version::Minor));
+						std::string xsl = Environment::Instance()->shareDir() + "/xml/" +
+						                  version + "/quakeml_1.2__scml_" + version + ".xsl";
 						SEISCOMP_ERROR("%s is QuakeML which cannot be read by sccnv", inputFile.c_str());
 						SEISCOMP_ERROR("Convert it to SCML with an XSLT processor, e.g.:");
-						SEISCOMP_ERROR("  xsltproc %s/xml/%s/quakeml_1.2__scml_%s.xsl %s",
-						               Environment::Instance()->shareDir().c_str(),
-						               version.c_str(), version.c_str(), inputFile.c_str());
+						SEISCOMP_ERROR("  xsltproc %s %s > %s.scml",
+						               xsl.c_str(), inputFile.c_str(), inputFile.c_str());
+						SEISCOMP_ERROR("Long QuakeML IDs can be shortened by removing their prefix, e.g.:");
+						SEISCOMP_ERROR("  xsltproc --stringparam ID_PREFIX quakeml:us.anss.org/ %s %s > %s.scml",
+						               xsl.c_str(), inputFile.c_str(), inputFile.c_str());
+						SEISCOMP_ERROR("Recommended parameters per agency are listed in the header of %s",
+						               xsl.c_str());
 						return false;
 					}
 
